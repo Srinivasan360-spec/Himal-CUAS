@@ -1,0 +1,648 @@
+<title>PRAAN Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ============ TOKENS — dark-first operational console; light override provided ============ */
+:root{
+  color-scheme: dark;
+  --ground:#080F12; --surface:#0F1B20; --surface-2:#152227; --surface-3:#0B1518;
+  --line:#213238; --line-soft:#182529; --line-bright:#33474E;
+  --text:#E4EDEF; --text-2:#8FA5AC; --text-3:#576C73;
+  --accent:#26A8C2; --accent-soft:#0F2E36; --accent-text:#041013;
+  --nominal:#4CBC85; --nominal-bg:#0F2A1C; --nominal-line:#215B3A;
+  --advisory:#D6A23E; --advisory-bg:#332510; --advisory-line:#66491B;
+  --caution:#DD8038; --caution-bg:#37210E; --caution-line:#6F401A;
+  --critical:#DD6459; --critical-bg:#361513; --critical-line:#6E2823;
+  --unknown:#63767D; --unknown-bg:#182529;
+  --banner-bg:#3A2B0E; --banner-text:#E8C167; --banner-line:#5C4718;
+  --shadow: 0 1px 2px rgba(0,0,0,.55), 0 18px 44px -22px rgba(0,0,0,.9);
+  --radius:4px;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    color-scheme: light;
+    --ground:#E9EFF0; --surface:#FFFFFF; --surface-2:#E3EBEC; --surface-3:#F4F8F8;
+    --line:#C6D5D8; --line-soft:#D9E4E6; --line-bright:#9FB6BB;
+    --text:#0C1B1F; --text-2:#48606A; --text-3:#6F8890;
+    --accent:#127489; --accent-soft:#D5ECF0; --accent-text:#FFFFFF;
+    --nominal:#1D8351; --nominal-bg:#DEF0E6; --nominal-line:#B4DCC4;
+    --advisory:#93690D; --advisory-bg:#F5E9CD; --advisory-line:#E0CB94;
+    --caution:#B15A19; --caution-bg:#F6E0CA; --caution-line:#E3BB92;
+    --critical:#A5342E; --critical-bg:#F6DBD9; --critical-line:#E5B0AB;
+    --unknown:#5E747C; --unknown-bg:#E2E9EA;
+    --banner-bg:#F5E4AE; --banner-text:#5C4718; --banner-line:#D9BE73;
+    --shadow: 0 1px 2px rgba(12,27,31,.08), 0 12px 28px -18px rgba(12,27,31,.30);
+  }
+}
+:root[data-theme="light"]{
+  color-scheme: light;
+  --ground:#E9EFF0; --surface:#FFFFFF; --surface-2:#E3EBEC; --surface-3:#F4F8F8;
+  --line:#C6D5D8; --line-soft:#D9E4E6; --line-bright:#9FB6BB;
+  --text:#0C1B1F; --text-2:#48606A; --text-3:#6F8890;
+  --accent:#127489; --accent-soft:#D5ECF0; --accent-text:#FFFFFF;
+  --nominal:#1D8351; --nominal-bg:#DEF0E6; --nominal-line:#B4DCC4;
+  --advisory:#93690D; --advisory-bg:#F5E9CD; --advisory-line:#E0CB94;
+  --caution:#B15A19; --caution-bg:#F6E0CA; --caution-line:#E3BB92;
+  --critical:#A5342E; --critical-bg:#F6DBD9; --critical-line:#E5B0AB;
+  --unknown:#5E747C; --unknown-bg:#E2E9EA;
+  --banner-bg:#F5E4AE; --banner-text:#5C4718; --banner-line:#D9BE73;
+  --shadow: 0 1px 2px rgba(12,27,31,.08), 0 12px 28px -18px rgba(12,27,31,.30);
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#080F12; --surface:#0F1B20; --surface-2:#152227; --surface-3:#0B1518;
+  --line:#213238; --line-soft:#182529; --line-bright:#33474E;
+  --text:#E4EDEF; --text-2:#8FA5AC; --text-3:#576C73;
+  --accent:#26A8C2; --accent-soft:#0F2E36; --accent-text:#041013;
+  --nominal:#4CBC85; --nominal-bg:#0F2A1C; --nominal-line:#215B3A;
+  --advisory:#D6A23E; --advisory-bg:#332510; --advisory-line:#66491B;
+  --caution:#DD8038; --caution-bg:#37210E; --caution-line:#6F401A;
+  --critical:#DD6459; --critical-bg:#361513; --critical-line:#6E2823;
+  --unknown:#63767D; --unknown-bg:#182529;
+  --banner-bg:#3A2B0E; --banner-text:#E8C167; --banner-line:#5C4718;
+  --shadow: 0 1px 2px rgba(0,0,0,.55), 0 18px 44px -22px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--ground); color:var(--text);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size:13.5px; line-height:1.4; -webkit-font-smoothing:antialiased}
+.disp{font-family:"Rajdhani",ui-sans-serif,system-ui,sans-serif}
+.mono{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+button{font-family:inherit; cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+
+/* ============ classification-style banner ============ */
+.classbar{background:var(--banner-bg); color:var(--banner-text); border-bottom:1px solid var(--banner-line);
+  text-align:center; padding:4px 8px; font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+  font-weight:600; letter-spacing:.14em; text-transform:uppercase}
+.classbar.bottom{border-bottom:none; border-top:1px solid var(--banner-line)}
+
+.wrap{max-width:1480px; margin:0 auto; padding:12px 16px 0}
+
+/* ============ header ============ */
+.hdr{display:flex; align-items:center; gap:22px; flex-wrap:wrap; padding:10px 2px 12px; border-bottom:1px solid var(--line)}
+.brand{display:flex; align-items:baseline; gap:9px}
+.brand .mark{font-family:"Rajdhani",sans-serif; font-weight:700; font-size:25px; letter-spacing:.06em; color:var(--text)}
+.brand .mark b{color:var(--accent)}
+.brand .sub{font-family:"IBM Plex Mono",monospace; font-size:9.5px; color:var(--text-3); letter-spacing:.1em; text-transform:uppercase}
+.hsep{width:1px; align-self:stretch; background:var(--line)}
+.hfield{display:flex; flex-direction:column; gap:1px}
+.hfield .k{font-family:"IBM Plex Mono",monospace; font-size:8.8px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-3)}
+.hfield .v{font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600; color:var(--text)}
+.hfield .v2{font-family:"IBM Plex Mono",monospace; font-size:9.5px; color:var(--text-3)}
+.sigbars{display:inline-flex; align-items:flex-end; gap:1.5px; height:11px; margin-right:6px; vertical-align:-2px}
+.sigbars i{width:2.5px; background:var(--line-bright); display:block}
+.sigbars i.on{background:var(--nominal)}
+.hspacer{flex:1}
+.mode-pill{font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:12px; letter-spacing:.1em;
+  padding:7px 15px; border:1px solid; transition:background .4s,color .4s,border-color .4s}
+.mode-NORMAL{background:var(--nominal-bg); color:var(--nominal); border-color:var(--nominal-line)}
+.mode-WATCH{background:var(--advisory-bg); color:var(--advisory); border-color:var(--advisory-line)}
+.mode-DEGRADED{background:var(--caution-bg); color:var(--caution); border-color:var(--caution-line)}
+.mode-STORM,.mode-SAFE{background:var(--critical-bg); color:var(--critical); border-color:var(--critical-line)}
+
+/* ============ BIT status strip ============ */
+.bitstrip{display:flex; gap:0; border-bottom:1px solid var(--line); overflow-x:auto}
+.bit-item{display:flex; align-items:center; gap:7px; padding:8px 16px; border-right:1px solid var(--line-soft); flex:0 0 auto}
+.bit-led{width:7px; height:7px; border-radius:50%; flex:0 0 auto; background:var(--nominal); box-shadow:0 0 5px var(--nominal); transition:background .3s,box-shadow .3s}
+.bit-led.fail{background:var(--critical); box-shadow:0 0 6px var(--critical); animation:ledpulse 1.1s ease-in-out infinite}
+.bit-led.warn{background:var(--advisory); box-shadow:0 0 5px var(--advisory)}
+@keyframes ledpulse{0%,100%{opacity:1} 50%{opacity:.4}}
+.bit-txt{display:flex; flex-direction:column; gap:0}
+.bit-name{font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:600; letter-spacing:.06em; color:var(--text)}
+.bit-stat{font-family:"IBM Plex Mono",monospace; font-size:8.8px; color:var(--text-3)}
+
+/* ============ main grid ============ */
+.grid{display:grid; grid-template-columns:minmax(0,1fr) 384px; gap:12px; padding:12px 0; align-items:start}
+@media (max-width:1100px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex; flex-direction:column; gap:12px; min-width:0}
+
+.panel{background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow)}
+.panel-hd{display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+  padding:9px 14px; border-bottom:1px solid var(--line-soft); background:var(--surface-2)}
+.panel-hd h2{font-family:"Rajdhani",sans-serif; font-weight:700; font-size:13.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--text)}
+.panel-hd .ph-note{font-family:"IBM Plex Mono",monospace; font-size:9.5px; color:var(--text-3)}
+
+/* ============ instrument cluster ============ */
+.gauges{display:grid; grid-template-columns:repeat(4,1fr)}
+.gauge-cell{padding:14px 8px 12px; display:flex; flex-direction:column; align-items:center; gap:2px; border-right:1px solid var(--line-soft)}
+.gauge-cell:last-child{border-right:none}
+.gauge-cell .g-label{font-family:"Rajdhani",sans-serif; font-weight:600; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-2); margin-bottom:2px}
+.gauge-svg{width:126px; height:126px}
+.gauge-tick{stroke:var(--line-bright); stroke-width:1.4}
+.gauge-tick.major{stroke:var(--text-3); stroke-width:2}
+.gauge-redline{stroke:var(--critical); opacity:.45}
+.gauge-arc-bg{fill:none; stroke:var(--surface-3); stroke-width:7}
+.gauge-arc{fill:none; stroke-width:7; stroke-linecap:butt; transition:stroke-dashoffset 900ms cubic-bezier(.4,0,.2,1), stroke 500ms}
+.gauge-needle{stroke:var(--text); stroke-width:2; transition:transform 900ms cubic-bezier(.4,0,.2,1)}
+.gauge-hub{fill:var(--text-3)}
+.gauge-num{font-family:"Rajdhani",sans-serif; font-weight:700; font-size:26px; transition:fill 500ms}
+.gauge-metric{font-family:"IBM Plex Mono",monospace; font-size:10.8px; color:var(--text-2); text-align:center; min-height:13px}
+.gauge-metric b{color:var(--text); font-weight:600}
+@media (max-width:760px){.gauges{grid-template-columns:repeat(2,1fr)}}
+
+/* ============ scope ============ */
+.scope-wrap{padding:14px; display:flex; gap:20px; flex-wrap:wrap}
+.scope{position:relative; width:246px; height:246px; flex:0 0 auto}
+.scope-caption{flex:1; min-width:210px; display:flex; flex-direction:column; gap:8px; justify-content:center}
+.trk-row{display:flex; justify-content:space-between; gap:10px; font-family:"IBM Plex Mono",monospace; font-size:11.5px;
+  padding-bottom:7px; border-bottom:1px solid var(--line-soft)}
+.trk-row:last-child{border-bottom:none; padding-bottom:0}
+.trk-k{color:var(--text-3)}
+.trk-v{color:var(--text); font-weight:600}
+.trk-v.accent{color:var(--accent)}
+.trk-tag{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:8.8px; font-weight:700; letter-spacing:.09em;
+  padding:1.5px 6px; background:var(--critical-bg); color:var(--critical); border:1px solid var(--critical-line)}
+
+/* ============ telemetry grid ============ */
+.telem{display:grid; grid-template-columns:repeat(auto-fill,minmax(146px,1fr))}
+.tcell{background:var(--surface); padding:9px 13px; border-top:1px solid var(--line-soft); border-right:1px solid var(--line-soft)}
+.tcell .t-label{font-family:"IBM Plex Mono",monospace; font-size:8.8px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); margin-bottom:3px}
+.tcell .t-value{font-family:"IBM Plex Mono",monospace; font-size:15px; font-weight:600; color:var(--text)}
+.tcell .t-unit{font-size:10px; color:var(--text-3); font-weight:400; margin-left:2px}
+.tcell .t-bar{margin-top:5px; height:3px; background:var(--surface-3); position:relative; overflow:hidden}
+.tcell .t-bar i{position:absolute; inset:0 auto 0 0; background:var(--accent)}
+
+/* ============ alerts / event log ============ */
+.alert-feed{display:flex; flex-direction:column; max-height:322px; overflow-y:auto; font-family:"IBM Plex Mono",monospace}
+.alert{display:grid; grid-template-columns:3px 1fr; border-bottom:1px solid var(--line-soft)}
+.alert:last-child{border-bottom:none}
+.alert-stripe{background:var(--unknown)}
+.alert.sev-critical .alert-stripe{background:var(--critical)}
+.alert.sev-caution .alert-stripe{background:var(--caution)}
+.alert.sev-advisory .alert-stripe{background:var(--advisory)}
+.alert.sev-nominal .alert-stripe{background:var(--nominal)}
+.alert-body{padding:8px 12px}
+.alert-top{display:flex; justify-content:space-between; gap:8px; margin-bottom:2px}
+.alert-code{font-size:9.5px; font-weight:700; letter-spacing:.06em}
+.alert.sev-critical .alert-code{color:var(--critical)}
+.alert.sev-caution .alert-code{color:var(--caution)}
+.alert.sev-advisory .alert-code{color:var(--advisory)}
+.alert.sev-nominal .alert-code{color:var(--nominal)}
+.alert-time{font-size:9.5px; color:var(--text-3)}
+.alert-msg{font-family:"IBM Plex Sans",sans-serif; font-size:11.6px; line-height:1.48; color:var(--text-2)}
+.alert-msg b{color:var(--text); font-weight:600}
+.alert-new{animation:flashin 1s ease-out}
+@keyframes flashin{0%{background:var(--accent-soft)} 100%{background:transparent}}
+
+/* ============ predictive panel ============ */
+.predict{padding:14px; display:flex; flex-direction:column; gap:12px}
+.predict-hero{display:flex; align-items:baseline; gap:8px}
+.predict-num{font-family:"Rajdhani",sans-serif; font-weight:700; font-size:36px; color:var(--text); transition:color 500ms}
+.predict-num.shift{color:var(--caution)}
+.predict-unit{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--text-3)}
+.predict-label{font-family:"IBM Plex Sans",sans-serif; font-size:11.6px; color:var(--text-2); line-height:1.5}
+.predict-label b{color:var(--text)}
+
+.spark-wrap{padding:2px 0}
+svg.spark{width:100%; height:60px; display:block; overflow:visible}
+.spark-grid{stroke:var(--line-soft); stroke-width:1}
+.spark-area{fill:url(#sparkFillA)}
+.spark-line{fill:none; stroke:var(--accent); stroke-width:1.6}
+.spark-end{fill:var(--accent)}
+.spark-label{font-family:"IBM Plex Mono",monospace; font-size:9px; fill:var(--text-3)}
+.spark-endlabel{font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600; fill:var(--text)}
+
+/* ============ demo controls ============ */
+.demo{padding:12px 14px 14px; display:flex; flex-direction:column; gap:7px}
+.demo-note{font-family:"IBM Plex Sans",sans-serif; font-size:10.6px; color:var(--text-3); line-height:1.5; margin-bottom:2px}
+.demo-btn{display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:8px 11px;
+  background:var(--surface-2); border:1px solid var(--line); color:var(--text);
+  font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:500; transition:background .15s,border-color .15s}
+.demo-btn:hover{background:var(--accent-soft); border-color:var(--accent)}
+.demo-btn .dot{width:6px; height:6px; border-radius:50%; flex:0 0 auto}
+.demo-btn.caution .dot{background:var(--caution)}
+.demo-btn.critical .dot{background:var(--critical)}
+.demo-btn.reset .dot{background:var(--nominal)}
+.demo-btn kbd{margin-left:auto; font-size:9px; color:var(--text-3); border:1px solid var(--line); padding:1px 5px}
+
+.footwrap{max-width:1480px; margin:0 auto; padding:0 16px}
+</style>
+
+<div class="classbar">SIMULATED DATA &mdash; SIH26050 DEMONSTRATION &mdash; NOT AN OPERATIONAL SYSTEM</div>
+
+<div class="wrap">
+
+  <!-- ================= HEADER ================= -->
+  <div class="hdr">
+    <div class="brand">
+      <span class="mark"><b>PRAAN</b></span>
+      <span class="sub">Prognostic Health &amp; Readiness Console</span>
+    </div>
+    <div class="hsep"></div>
+    <div class="hfield"><span class="k">Node</span><span class="v">HIMAL&#8209;04</span><span class="v2">HIMAL-CUAS &middot; PLUTO</span></div>
+    <div class="hsep"></div>
+    <div class="hfield"><span class="k">Position</span><span class="v">34.152&deg;N 77.577&deg;E</span><span class="v2">ALT 4,270 m &middot; SECTOR NW&#8209;3</span></div>
+    <div class="hsep"></div>
+    <div class="hfield"><span class="k">Zulu</span><span class="v" id="clock">--:--:--Z</span><span class="v2" id="clockdate">-- --- ----</span></div>
+    <div class="hsep"></div>
+    <div class="hfield"><span class="k">Watch</span><span class="v" style="font-size:12px">OPERATOR&nbsp;01</span><span class="v2">NIGHT WATCH &middot; 2200&ndash;0600 IST</span></div>
+    <div class="hsep"></div>
+    <div class="hfield">
+      <span class="k">Uplink</span>
+      <span class="v" style="font-size:12px"><span class="sigbars" id="sigbars"></span>LoRa &middot; &minus;91 dBm</span>
+      <span class="v2">last sync 4s ago</span>
+    </div>
+    <div class="hspacer"></div>
+    <div id="modePill" class="mode-pill mode-NORMAL">MODE&nbsp;&middot;&nbsp;NORMAL</div>
+  </div>
+
+  <!-- ================= BIT STRIP ================= -->
+  <div class="bitstrip" id="bitstrip"><!-- filled by JS --></div>
+
+  <!-- ================= MAIN GRID ================= -->
+  <div class="grid">
+
+    <div class="col">
+      <div class="panel">
+        <div class="panel-hd"><h2>Capability &amp; Vitals</h2><span class="ph-note">composite score &middot; 0&ndash;100</span></div>
+        <div class="gauges" id="gauges"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-hd"><h2>Detection Scope</h2><span class="ph-note">bearing &middot; range &middot; confidence</span></div>
+        <div class="scope-wrap">
+          <div class="scope" id="scope"></div>
+          <div class="scope-caption">
+            <div class="trk-row"><span class="trk-k">Track</span><span class="trk-v accent" id="trkId">TRK&#8209;229 <span class="trk-tag">UNK</span></span></div>
+            <div class="trk-row"><span class="trk-k">Classification</span><span class="trk-v">Quad&#8209;rotor, 87% conf.</span></div>
+            <div class="trk-row"><span class="trk-k">Bearing</span><span class="trk-v" id="trkBrg">211&deg;</span></div>
+            <div class="trk-row"><span class="trk-k">Range</span><span class="trk-v" id="trkRange">1.62 km</span></div>
+            <div class="trk-row"><span class="trk-k">Closing rate</span><span class="trk-v">4.1 m/s</span></div>
+            <div class="trk-row"><span class="trk-k">Source</span><span class="trk-v">RF + radar fusion</span></div>
+          </div>
+        </div>
+        <div class="telem" id="telem"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-hd"><h2>Degradation Trends</h2><span class="ph-note">14&#8209;day window</span></div>
+        <div style="padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:24px">
+          <div><div class="hfield"><span class="k" style="margin-bottom:6px">Enclosure Insulation &middot; U&middot;A</span></div><div class="spark-wrap" id="sparkUA"></div></div>
+          <div><div class="hfield"><span class="k" style="margin-bottom:6px">Battery Internal Resistance</span></div><div class="spark-wrap" id="sparkR"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <div class="panel-hd"><h2>Cold&#8209;Weather Survival Margin</h2></div>
+        <div class="predict">
+          <div class="predict-hero"><span class="predict-num" id="survivalTemp">&minus;38.4</span><span class="predict-unit">&deg;C minimum, at current heater capacity</span></div>
+          <p class="predict-label" id="survivalLabel">Design requirement is <b>&minus;40&nbsp;&deg;C</b>. Margin nominal &mdash; insulation performing at commissioning baseline.</p>
+          <div class="spark-wrap" id="sparkSurvival"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-hd"><h2>Event Log</h2><span class="ph-note" id="alertCount">1 active</span></div>
+        <div class="alert-feed" id="alertFeed"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-hd"><h2>Demonstration Controls</h2></div>
+        <div class="demo">
+          <p class="demo-note">For live Q&amp;A only &mdash; injects a simulated fault so the jury can watch detection, diagnosis and mode escalation happen in real time.</p>
+          <button class="demo-btn caution" onclick="injectRadome()"><span class="dot"></span> INJECT &middot; RADOME ICING <kbd>1</kbd></button>
+          <button class="demo-btn critical" onclick="injectHeater()"><span class="dot"></span> INJECT &middot; ZONE 2 HEATER FAULT <kbd>2</kbd></button>
+          <button class="demo-btn reset" onclick="resetAll()"><span class="dot"></span> RESET TO NOMINAL <kbd>0</kbd></button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footwrap"><div class="classbar" style="border:1px solid var(--banner-line); margin-bottom:12px">SIMULATED DATA &mdash; SIH26050 DEMONSTRATION &mdash; NOT AN OPERATIONAL SYSTEM</div></div>
+
+<script>
+/* ============================================================ State ============================================================ */
+const state = {
+  mode:'NORMAL',
+  detect:94, detectRange:2.1,
+  track:88, trackSlew:46, trackErr:0.3,
+  endure:91, endureHours:31.4,
+  protect:91,
+  survivalTemp:-38.4,
+  uaSeries:[1.00,1.01,1.00,1.02,1.03,1.02,1.04,1.03,1.05,1.06,1.05,1.07,1.08,1.07],
+  rSeries:[1.00,1.00,1.01,1.01,1.02,1.02,1.02,1.03,1.03,1.04,1.04,1.05,1.05,1.06],
+  survSeries:[-41.0,-40.8,-40.5,-40.1,-39.8,-39.5,-39.2,-39.0,-38.8,-38.6,-38.5,-38.4,-38.4,-38.4],
+};
+
+const BIT_ITEMS = [
+  {key:'rf', name:'RF CHAIN'}, {key:'radar', name:'RADAR'}, {key:'radome', name:'RADOME'},
+  {key:'effector', name:'EFFECTOR'}, {key:'gimbal', name:'GIMBAL'},
+  {key:'thermal', name:'THERMAL'}, {key:'power', name:'POWER'}, {key:'compute', name:'COMPUTE'},
+];
+const bitState = {}; BIT_ITEMS.forEach(b => bitState[b.key] = {status:'PASS', t: nowStr()});
+
+let alertSeq = 0;
+const alerts = [];
+
+function nowStr(){ return new Date().toISOString().substr(11,8)+'Z'; }
+
+function setBit(key, status){
+  bitState[key] = {status, t: nowStr()};
+  renderBit();
+}
+
+function renderBit(){
+  document.getElementById('bitstrip').innerHTML = BIT_ITEMS.map(b => {
+    const s = bitState[b.key];
+    const cls = s.status==='PASS' ? '' : (s.status==='FAIL' ? 'fail' : 'warn');
+    return `<div class="bit-item">
+      <span class="bit-led ${cls}"></span>
+      <span class="bit-txt"><span class="bit-name">${b.name}</span><span class="bit-stat">${s.status} &middot; ${s.t}</span></span>
+    </div>`;
+  }).join('');
+}
+
+function pushAlert(sev, msg){
+  alertSeq++;
+  const code = 'EVT-' + (2200+alertSeq);
+  alerts.unshift({id:alertSeq, sev, msg, code, time:nowStr(), fresh:true});
+  if (alerts.length > 9) alerts.pop();
+  renderAlerts();
+}
+
+function renderAlerts(){
+  const feed = document.getElementById('alertFeed');
+  feed.innerHTML = alerts.map(a => `
+    <div class="alert sev-${a.sev} ${a.fresh?'alert-new':''}">
+      <div class="alert-stripe"></div>
+      <div class="alert-body">
+        <div class="alert-top"><span class="alert-code">${a.sev.toUpperCase()} &middot; ${a.code}</span><span class="alert-time">${a.time}</span></div>
+        <div class="alert-msg">${a.msg}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('alertCount').textContent = alerts.length + ' active';
+  alerts.forEach(a => a.fresh = false);
+}
+
+/* ============================================================ Gauges — needle + ticks, real instrument style ============================================================ */
+const GAUGE_DEFS = [
+  {key:'detect', label:'Detect', metric: s => `<b>${s.detectRange.toFixed(1)} km</b> effective range`},
+  {key:'track',  label:'Track',  metric: s => `<b>${s.trackSlew}&deg;/s</b> slew &middot; ${s.trackErr}&deg; error`},
+  {key:'endure', label:'Endure', metric: s => `<b>${s.endureHours.toFixed(1)} h</b> to reserve`},
+  {key:'protect',label:'Protect',metric: s => `<b>${s.protect>=80?'sealed':s.protect>=60?'nominal':s.protect>=40?'degraded':'breach risk'}</b> enclosure`},
+];
+
+const CX=63, CY=68, R=48, R_TICK_OUT=48, R_TICK_IN_MIN=40, R_TICK_IN_MAJ=37, R_NEEDLE=44;
+const START_DEG=135, SWEEP_DEG=270; // 135deg -> 405deg (i.e. 135 through bottom to 45)
+const CIRC = 2*Math.PI*R, SWEEP_FRAC = SWEEP_DEG/360;
+
+function bandColor(v){
+  if (v>=80) return 'var(--nominal)';
+  if (v>=60) return 'var(--advisory)';
+  if (v>=40) return 'var(--caution)';
+  return 'var(--critical)';
+}
+function angFor(v){ return START_DEG + (Math.max(0,Math.min(100,v))/100)*SWEEP_DEG; }
+function polar(cx,cy,r,angDeg){ const a=(angDeg-90)*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
+
+function buildGauges(){
+  const ticks = [];
+  for (let v=0; v<=100; v+=10){
+    const major = v%50===0;
+    const a = angFor(v);
+    const [x1,y1] = polar(CX,CY,R_TICK_OUT,a);
+    const [x2,y2] = polar(CX,CY, major?R_TICK_IN_MAJ:R_TICK_IN_MIN, a);
+    ticks.push(`<line class="gauge-tick ${major?'major':''}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`);
+  }
+  const redlineStart = angFor(0), redlineEnd = angFor(40);
+  const [rlx1,rly1] = polar(CX,CY,R,redlineStart), [rlx2,rly2] = polar(CX,CY,R,redlineEnd);
+  const redlineArc = `M${rlx1.toFixed(1)},${rly1.toFixed(1)} A${R},${R} 0 0 1 ${rlx2.toFixed(1)},${rly2.toFixed(1)}`;
+
+  const wrap = document.getElementById('gauges');
+  wrap.innerHTML = GAUGE_DEFS.map(g => `
+    <div class="gauge-cell">
+      <span class="g-label">${g.label}</span>
+      <svg class="gauge-svg" viewBox="0 0 126 140">
+        <path class="gauge-redline" d="${redlineArc}" fill="none" stroke-width="7"/>
+        <g transform="rotate(135 ${CX} ${CY})">
+          <circle class="gauge-arc-bg" cx="${CX}" cy="${CY}" r="${R}" stroke-dasharray="${CIRC*SWEEP_FRAC} ${CIRC}"/>
+          <circle id="arc-${g.key}" class="gauge-arc" cx="${CX}" cy="${CY}" r="${R}" stroke="${bandColor(state[g.key])}"
+            stroke-dasharray="${CIRC*SWEEP_FRAC} ${CIRC}" stroke-dashoffset="${CIRC*SWEEP_FRAC}"/>
+        </g>
+        ${ticks.join('')}
+        <line id="needle-${g.key}" class="gauge-needle" x1="${CX}" y1="${CY}" x2="${CX}" y2="${CY-R_NEEDLE}"
+          transform="rotate(${angFor(state[g.key])} ${CX} ${CY})"/>
+        <circle class="gauge-hub" cx="${CX}" cy="${CY}" r="3"/>
+        <text id="num-${g.key}" class="gauge-num" x="${CX}" y="${CY+30}" text-anchor="middle" fill="${bandColor(state[g.key])}">${state[g.key]}</text>
+      </svg>
+      <span class="gauge-metric" id="metric-${g.key}"></span>
+    </div>
+  `).join('');
+  updateGauges();
+}
+
+function updateGauges(){
+  GAUGE_DEFS.forEach(g => {
+    const v = Math.max(0, Math.min(100, state[g.key]));
+    const offset = CIRC*SWEEP_FRAC * (1 - v/100);
+    const col = bandColor(v);
+    const arc = document.getElementById('arc-'+g.key);
+    const needle = document.getElementById('needle-'+g.key);
+    const num = document.getElementById('num-'+g.key);
+    if (arc){ arc.style.strokeDashoffset = offset; arc.setAttribute('stroke', col); }
+    if (needle){ needle.setAttribute('transform', `rotate(${angFor(v)} ${CX} ${CY})`); needle.setAttribute('stroke', col); }
+    if (num){ num.textContent = Math.round(v); num.setAttribute('fill', col); }
+    const m = document.getElementById('metric-'+g.key);
+    if (m) m.innerHTML = g.metric(state);
+  });
+}
+
+/* ============================================================ Scope — compass ring, ticks, track diamond, sweep afterglow ============================================================ */
+function buildScope(){
+  const el = document.getElementById('scope');
+  const cx=123, cy=123, outerR=108, rings=[36,72,108];
+  const ringKm = ['1.0','2.0','3.2'];
+  let ticks='';
+  for (let d=0; d<360; d+=10){
+    const major = d%30===0;
+    const [x1,y1]=polar(cx,cy,outerR,d), [x2,y2]=polar(cx,cy,major?outerR-9:outerR-5,d);
+    ticks += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--line-bright)" stroke-width="${major?1.4:1}"/>`;
+  }
+  const dirLabels = [[0,'N'],[90,'E'],[180,'S'],[270,'W']].map(([d,t])=>{
+    const [x,y]=polar(cx,cy,outerR-19,d);
+    return `<text x="${x.toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="middle" class="spark-label" font-size="9.5" fill="var(--text-2)">${t}</text>`;
+  }).join('');
+  el.innerHTML = `
+  <svg viewBox="0 0 246 246" width="246" height="246">
+    <circle cx="${cx}" cy="${cy}" r="${outerR}" fill="var(--surface-3)" stroke="var(--line)" stroke-width="1"/>
+    ${rings.map((r,i)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--line-soft)" stroke-width="1"/>
+      <text x="${cx+3}" y="${cy-r+11}" class="spark-label" font-size="8" fill="var(--text-3)">${ringKm[i]}km</text>`).join('')}
+    ${ticks}
+    ${dirLabels}
+    <g id="sweepGroup"></g>
+    <path id="scopeDiamond" d="" fill="var(--critical)" stroke="var(--critical)" stroke-width="1"/>
+    <circle id="scopeTargetRing" cx="${cx}" cy="${cy}" r="10" fill="none" stroke="var(--critical)" stroke-width="1.3" opacity="0.55"/>
+  </svg>`;
+  positionTarget(211, 1.62);
+  animateSweep();
+}
+
+function drawDiamond(cx,cy,s){
+  return `M${cx},${cy-s} L${cx+s},${cy} L${cx},${cy+s} L${cx-s},${cy} Z`;
+}
+
+function positionTarget(bearingDeg, rangeKm){
+  const cx=123, cy=123, maxR=108, maxKm=3.2;
+  const rad = (bearingDeg-90) * Math.PI/180;
+  const r = Math.min(maxR, (rangeKm/maxKm)*maxR);
+  const x = cx + r*Math.cos(rad), y = cy + r*Math.sin(rad);
+  const d = document.getElementById('scopeDiamond');
+  const ring = document.getElementById('scopeTargetRing');
+  if (d) d.setAttribute('d', drawDiamond(x,y,5.5));
+  if (ring){ ring.setAttribute('cx',x); ring.setAttribute('cy',y); }
+  document.getElementById('trkBrg').textContent = bearingDeg + '°';
+  document.getElementById('trkRange').textContent = rangeKm.toFixed(2) + ' km';
+}
+
+let sweepAngle = 0;
+function animateSweep(){
+  sweepAngle = (sweepAngle + 1.1) % 360;
+  const g = document.getElementById('sweepGroup');
+  if (g){
+    const cx=123, cy=123, r=108;
+    let trail = '';
+    for (let i=0; i<7; i++){
+      const a = sweepAngle - i*2.4;
+      const op = (1 - i/7) * 0.5;
+      const [x,y] = polar(cx,cy,r,a);
+      trail += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--accent)" stroke-width="${i===0?1.6:1}" opacity="${op.toFixed(2)}"/>`;
+    }
+    g.innerHTML = trail;
+  }
+  requestAnimationFrame(animateSweep);
+}
+
+/* ============================================================ Signal bars ============================================================ */
+function buildSigBars(strength){
+  const el = document.getElementById('sigbars');
+  const heights=[4,6,8,10,11];
+  el.innerHTML = heights.map((h,i)=>`<i style="height:${h}px" class="${i<strength?'on':''}"></i>`).join('');
+}
+
+/* ============================================================ Telemetry grid ============================================================ */
+function buildTelem(){
+  const items = [
+    ['Battery SOC', '81', '%', 81],
+    ['Battery temp', '9.2', '&deg;C', null],
+    ['Enclosure int.', '14.6', '&deg;C', null],
+    ['Ambient ext.', '&minus;31.8', '&deg;C', null],
+    ['Heater Z1 duty', '38', '%', 38],
+    ['Heater Z2 duty', '41', '%', 41],
+    ['Cavity pressure', '101.9', 'kPa', null],
+    ['Humidity int.', '18', '% RH', 18],
+    ['Solar input', '64', 'W', null],
+    ['Wind speed', '11.4', 'm/s', 46],
+    ['RF noise floor', '&minus;104', 'dBm', null],
+    ['Compute temp', '52', '&deg;C', 52],
+  ];
+  document.getElementById('telem').innerHTML = items.map(([l,v,u,bar])=>`
+    <div class="tcell">
+      <div class="t-label">${l}</div>
+      <div class="t-value">${v}<span class="t-unit">${u}</span></div>
+      ${bar!=null?`<div class="t-bar"><i style="width:${bar}%"></i></div>`:''}
+    </div>`).join('');
+}
+
+/* ============================================================ Sparklines ============================================================ */
+function drawSpark(elId, series, opts={}){
+  const w=280,h=60,pad=6;
+  const min = Math.min(...series), max = Math.max(...series);
+  const span = (max-min)||1;
+  const stepX = (w-pad*2)/(series.length-1);
+  const pts = series.map((v,i)=>[pad+i*stepX, h-pad - ((v-min)/span)*(h-pad*2)]);
+  const line = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const area = line + ` L${pts[pts.length-1][0].toFixed(1)},${h-pad} L${pts[0][0].toFixed(1)},${h-pad} Z`;
+  const gridY = [0.25,0.5,0.75].map(f => pad + f*(h-pad*2));
+  const last = pts[pts.length-1];
+  const fmt = opts.fmt || (v=>v.toFixed(2));
+  document.getElementById(elId).innerHTML = `
+    <svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <defs><linearGradient id="sparkFillA" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+      </linearGradient></defs>
+      ${gridY.map(y=>`<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" class="spark-grid"/>`).join('')}
+      <path class="spark-area" d="${area}"/><path class="spark-line" d="${line}"/>
+      <circle class="spark-end" cx="${last[0]}" cy="${last[1]}" r="3"/>
+      <text class="spark-endlabel" x="${last[0]-4}" y="${last[1]-8}" text-anchor="end">${fmt(series[series.length-1])}</text>
+      <text class="spark-label" x="${pad}" y="${h-1}">&minus;14d</text>
+      <text class="spark-label" x="${w-pad}" y="${h-1}" text-anchor="end">now</text>
+    </svg>`;
+}
+function drawAllSparks(){
+  drawSpark('sparkUA', state.uaSeries, {fmt:v=>v.toFixed(2)+'&times;'});
+  drawSpark('sparkR', state.rSeries, {fmt:v=>v.toFixed(2)+'&times;'});
+  drawSpark('sparkSurvival', state.survSeries, {fmt:v=>v.toFixed(1)+'&deg;'});
+}
+
+/* ============================================================ Mode + clock ============================================================ */
+function setMode(m){
+  state.mode = m;
+  const pill = document.getElementById('modePill');
+  pill.className = 'mode-pill mode-'+m;
+  pill.textContent = 'MODE · '+m;
+}
+function tickClock(){
+  const d = new Date();
+  document.getElementById('clock').textContent = d.toISOString().substr(11,8)+'Z';
+  document.getElementById('clockdate').textContent = d.toUTCString().substr(0,16).replace(/^\w+,\s/,'');
+}
+setInterval(tickClock, 1000); tickClock();
+
+/* ============================================================ Demo scenarios ============================================================ */
+function injectRadome(){
+  state.protect = 52; state.detect = 81; state.detectRange = 1.4;
+  state.survivalTemp = -29.1;
+  state.survSeries = state.survSeries.slice(1).concat(-29.1);
+  document.getElementById('survivalTemp').textContent = '−29.1';
+  document.getElementById('survivalTemp').classList.add('shift');
+  document.getElementById('survivalLabel').innerHTML =
+    'Design requirement is <b>&minus;40&nbsp;&deg;C</b>. <b style="color:var(--caution)">9.3&nbsp;&deg;C of margin lost</b> in the last 6 hours &mdash; radome heater duty is 40% above the thermal model&rsquo;s prediction for tonight&rsquo;s weather.';
+  drawSpark('sparkSurvival', state.survSeries, {fmt:v=>v.toFixed(1)+'&deg;'});
+  setMode('WATCH'); updateGauges(); positionTarget(198, 1.4);
+  setBit('radome','WARN'); setBit('radar','WARN');
+  pushAlert('advisory', '<b>R8 &middot; Radome signal level</b> trending down. Heater duty +40% vs thermal-model prediction &mdash; ice accretion likely. Pre-heating radome automatically.');
+}
+function injectHeater(){
+  state.protect = Math.min(state.protect, 38);
+  state.endure = 47; state.endureHours = 11.2;
+  updateGauges(); setMode('DEGRADED');
+  setBit('thermal','FAIL'); setBit('power','WARN');
+  pushAlert('critical', '<b>Zone 2 heater &middot; open circuit.</b> Current draw 0 A at 100% commanded duty. Zone temperature falling toward safety limit &mdash; isolating faulty circuit, escalating to operator.');
+}
+function resetAll(){
+  Object.assign(state, {detect:94, detectRange:2.1, track:88, trackSlew:46, trackErr:0.3, endure:91, endureHours:31.4, protect:91, survivalTemp:-38.4});
+  state.survSeries = [-41.0,-40.8,-40.5,-40.1,-39.8,-39.5,-39.2,-39.0,-38.8,-38.6,-38.5,-38.4,-38.4,-38.4];
+  document.getElementById('survivalTemp').textContent = '−38.4';
+  document.getElementById('survivalTemp').classList.remove('shift');
+  document.getElementById('survivalLabel').innerHTML = 'Design requirement is <b>&minus;40&nbsp;&deg;C</b>. Margin nominal &mdash; insulation performing at commissioning baseline.';
+  drawSpark('sparkSurvival', state.survSeries, {fmt:v=>v.toFixed(1)+'&deg;'});
+  setMode('NORMAL'); updateGauges(); positionTarget(211, 1.62);
+  BIT_ITEMS.forEach(b => setBit(b.key, 'PASS'));
+  pushAlert('nominal', 'All subsystems returned to nominal. Fault conditions cleared by operator reset.');
+}
+
+document.addEventListener('keydown', e=>{
+  if (e.key==='1') injectRadome();
+  if (e.key==='2') injectHeater();
+  if (e.key==='0') resetAll();
+});
+
+/* ============================================================ Boot ============================================================ */
+buildGauges();
+buildScope();
+buildTelem();
+buildSigBars(4);
+drawAllSparks();
+renderBit();
+pushAlert('nominal', 'System nominal. All zones at setpoint, RF and radar chains confirmed via built-in test.');
+</script>
